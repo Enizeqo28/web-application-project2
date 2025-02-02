@@ -20,23 +20,24 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-
-
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-        with:
-          region: ${{ secrets.AWS_REGION }}
 
-      - name: Build and Tag Docker Images
+      - name: Build, tag, and push WebApp Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: assignment1-dev-webapp-repo
+          APPLICATION_IMAGE_TAG: latest
         run: |
-          docker build -t ${{ secrets.AWS_ECR_WEBAPP_URI }}:latest ./webapp
-          docker build -t ${{ secrets.AWS_ECR_MYSQL_URI }}:latest ./dbb
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$APPLICATION_IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$APPLICATION_IMAGE_TAG
 
-      - name: Push Docker Images to Amazon ECR
+      - name: Build, tag, and push MySQL Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: assignment1-dev-mysql-repo
+          SQL_IMAGE_TAG: latest
         run: |
-          docker push ${{ secrets.AWS_ECR_WEBAPP_URI }}:latest
-          docker push ${{ secrets.AWS_ECR_MYSQL_URI }}:latest
-
-
-
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$SQL_IMAGE_TAG -f Dockerfile_mysql .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SQL_IMAGE_TAG
