@@ -1,3 +1,5 @@
+# Hello, my name is Eni!
+
 # Install the required MySQL package
 ```
 sudo apt-get update -y
@@ -21,7 +23,7 @@ docker build -t my_db -f Dockerfile_mysql .
 docker build -t my_app -f Dockerfile . 
 ```
 
-### Running mysql
+### Running mysql 
 ```
 docker run -d -e MYSQL_ROOT_PASSWORD=pw  my_db
 ```
