@@ -1,4 +1,4 @@
-# Hello, my name is Eni!
+# Hello, my name is Eni! This is my assignment
 
 # Install the required MySQL package
 ```
