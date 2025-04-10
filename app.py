@@ -21,7 +21,13 @@ IMAGE_URL = os.getenv('IMAGE_URL')  # expected: "s3://bucket-name/path/to/image"
 
 if IMAGE_URL:
     if IMAGE_URL.startswith("s3://"):
-        _, bucket, key = IMAGE_URL.split("/", 2)
+        # Remove the "s3://" prefix and split into bucket and key
+        s3_path = IMAGE_URL[len("s3://"):]
+        try:
+            bucket, key = s3_path.split("/", 1)
+        except ValueError:
+            print("ERROR: IMAGE_URL does not contain a '/' after the bucket name.")
+            bucket, key = "", ""
     else:
         parts = IMAGE_URL.split("/", 1)
         bucket, key = parts[0], parts[1] if len(parts) > 1 else ""
@@ -38,11 +44,12 @@ if IMAGE_URL:
 # Database Configuration using Secrets/ConfigMap
 # ---------------------------
 
-DBHOST = os.getenv("DB_HOST", "localhost")
 DBUSER = os.getenv("DB_USER", "root")
 DBPWD  = os.getenv("DB_PASSWORD", "")
 DATABASE = os.getenv("DB_NAME", "employees")
+DBHOST = os.getenv("DB_HOST", "localhost")  # Add this line
 DBPORT = int(os.getenv("DB_PORT", 3306))
+
 
 db_conn = connections.Connection(
     host=DBHOST,
@@ -176,4 +183,4 @@ if __name__ == '__main__':
         exit(1)
     
     # Run Flask app on port 81 so Kubernetes/Docker can route correctly
-    app.run(host='0.0.0.0', port=81, debug=True)
+    app.run(host='0.0.0.0', port=8081, debug=True)
