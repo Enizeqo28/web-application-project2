@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-<center>
-	<font color="DodgerBlue" size="5" style="font-family: avenir">
-		<body style="background: {{ color }};">
-			<h1>The employee {{ name }} wassuccessfully added to the database</h1><br>
-			<h2>The Employee has been added to the database</h2><br>
-			<h2>{{ name }}</h2><br>
-			<title>Add Emp Output</title>
-			<a href="{{ url_for('home') }}">Back</a>
-		</body>
-	</font>
-</center>
+    <title>Add Emp Output - {{ project_name }}</title>
+    <style>
+        body {
+            background-image: url('{{ url_for('static', filename='background.png') }}');
+            background-size: cover;
+            color: #e4e4e4;
+            text-align: center;
+            font-family: avenir;
+        }
+    </style>
 </head>
 <body>
-
+    <header>
+        <h1>{{ project_name }}</h1>
+        <p><em>{{ project_slogan }}</em></p>
+    </header>
+    <div>
+        <h1>The employee {{ name }} was successfully added to the database</h1>
+        <a href="{{ url_for('home') }}">Back</a>
+    </div>
 </body>
 </html>
