@@ -4,7 +4,8 @@
     <title>About - {{ project_name }}</title>
     <style>
         body {
-            background-image: url('{{ url_for('static', filename='background.png') }}');
+            /* Use double quotes inside url to avoid conflict */
+            background-image: url("{{ url_for('static', filename='background.png') }}");
             background-size: cover;
             color: #e4e4e4;
             text-align: center;
@@ -21,9 +22,8 @@
         <p><em>{{ project_slogan }}</em></p>
     </header>
     <div>
-        <h2>The employee {{ name }} was successfully added to the database</h2>
-        <h3>The Employee has been added to the database</h3>
-        <h2>{{ name }}</h2>
+        <!-- Consolidated employee success message -->
+        <h2>Employee {{ name }} was successfully added to the database</h2>
         <a href="{{ url_for('home') }}">Back</a>
     </div>
 </body>
