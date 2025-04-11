@@ -31,13 +31,13 @@ jobs:
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-
+   
 
     - name: Build Docker image
       run: |
-        docker build -t $ECR_REPOSITORY .
-        docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
+        docker buildx build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest . --load
+        
+       
     - name: Run unit tests
       run: |
         echo "Add your test commands here"
