@@ -1,186 +1,119 @@
-from flask import Flask, render_template, request, url_for
-from pymysql import connections
 import os
 import boto3
-import argparse
-import random
+from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
-# ---------------------------
-# Configuration via Environment Variables
-# ---------------------------
+# Configuration from environment
+S3_IMAGE_URL  = os.environ.get('BG_IMAGE_URL')
+MY_NAME       = os.environ.get('MY_NAME') or "Eni Zeqo"
+PROJECT_NAME  = os.environ.get('PROJECT_NAME') or "My Project"
+DB_USER       = os.environ.get('DB_USER')
+DB_PASSWORD   = os.environ.get('DB_PASSWORD')
+DB_HOST       = os.environ.get('DB_HOST', 'localhost')
+DB_NAME       = os.environ.get('DB_NAME', 'mydatabase')
 
-PROJECT_NAME = os.getenv('PROJECT_NAME', "Eni's Cloud Edge")
-PROJECT_SLOGAN = os.getenv('PROJECT_SLOGAN', "Fast, Smart, Reliable")
-IMAGE_URL = os.getenv('IMAGE_URL')  # expected: "s3://bucket-name/path/to/image"
+# Log the background image URL for debugging
+if S3_IMAGE_URL:
+    print(f"Background image URL from config: {S3_IMAGE_URL}")
+else:
+    print("No BG_IMAGE_URL provided; using default background.")
 
-# ---------------------------
-# Download Background Image from S3
-# ---------------------------
-
-if IMAGE_URL:
-    if IMAGE_URL.startswith("s3://"):
-        # Remove the "s3://" prefix and split into bucket and key
-        s3_path = IMAGE_URL[len("s3://"):]
-        try:
-            bucket, key = s3_path.split("/", 1)
-        except ValueError:
-            print("ERROR: IMAGE_URL does not contain a '/' after the bucket name.")
-            bucket, key = "", ""
-    else:
-        parts = IMAGE_URL.split("/", 1)
-        bucket, key = parts[0], parts[1] if len(parts) > 1 else ""
-    s3 = boto3.client('s3')
-    local_file = key.split("/")[-1] or "background.png"
-    local_path = os.path.join("static", local_file)
+def download_background_image():
+    """Download the background image from S3 to local storage (if URL is provided)."""
+    if not S3_IMAGE_URL:
+        return  # No URL, nothing to do
     try:
-        s3.download_file(bucket, key, local_path)
-        print(f"Downloaded S3 image {bucket}/{key} to {local_path}")
+        url = S3_IMAGE_URL
+        bucket_name = url.replace("s3://", "").split("/")[0]
+        object_key = "/".join(url.replace("s3://", "").split("/")[1:])
+        
+        local_path = "static/background.png"
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        
+        s3 = boto3.resource('s3')
+        s3.Bucket(bucket_name).download_file(object_key, local_path)
+        print(f"Downloaded background image from S3: s3://{bucket_name}/{object_key} -> {local_path}")
     except Exception as e:
-        print(f"ERROR: could not download image from S3 - {e}")
+        print(f"ERROR downloading S3 image: {e}")
 
-# ---------------------------
-# Database Configuration using Secrets/ConfigMap
-# ---------------------------
-
-DBUSER = os.getenv("DB_USER", "root")
-DBPWD  = os.getenv("DB_PASSWORD", "")
-DATABASE = os.getenv("DB_NAME", "employees")
-DBHOST = os.getenv("DB_HOST", "localhost")  # Add this line
-DBPORT = int(os.getenv("DB_PORT", 3306))
-
-
-db_conn = connections.Connection(
-    host=DBHOST,
-    port=DBPORT,
-    user=DBUSER,
-    password=DBPWD,
-    db=DATABASE
-)
-
-# ---------------------------
-# Color Support for Templates
-# ---------------------------
-
-color_codes = {
-    "red": "#e74c3c",
-    "green": "#16a085",
-    "blue": "#89CFF0",
-    "blue2": "#30336b",
-    "pink": "#f4c2c2",
-    "darkblue": "#130f40",
-    "lime": "#C1FF9C",
-}
-SUPPORTED_COLORS = ",".join(color_codes.keys())
-# Pick a random color if not set by command-line or environment variable
-COLOR = random.choice(list(color_codes.keys()))
-
-# ---------------------------
-# Routes
-# ---------------------------
-
-@app.route("/", methods=['GET', 'POST'])
+# ----------------
+# ROUTE 1: Home (about.html)
+# ----------------
+@app.route("/")
 def home():
-    return render_template('addemp.html',
-                           color=color_codes[COLOR],
-                           project_name=PROJECT_NAME,
-                           project_slogan=PROJECT_SLOGAN)
+    # Display the 'about.html' template
+    return render_template("about.html",
+                           project_name=MY_NAME,
+                           project_slogan=PROJECT_NAME,
+                           name=MY_NAME)
 
-@app.route("/about", methods=['GET','POST'])
-def about():
-    return render_template('about.html',
-                           color=color_codes[COLOR],
-                           project_name=PROJECT_NAME,
-                           project_slogan=PROJECT_SLOGAN)
-    
-@app.route("/addemp", methods=['POST'])
-def add_emp():
-    emp_id = request.form['emp_id']
-    first_name = request.form['first_name']
-    last_name = request.form['last_name']
-    primary_skill = request.form['primary_skill']
-    location = request.form['location']
+# ----------------
+# ROUTE 2: Add Employee (GET -> Show the form)
+# ----------------
+@app.route("/addemp", methods=["GET"])
+def addemp_form():
+    # 'addemp.html' uses a <form> to POST data to /addemp
+    # Pass a background color or any variable the template needs
+    return render_template("addemp.html", color="#EDEDED")
 
-    insert_sql = "INSERT INTO employee VALUES (%s, %s, %s, %s, %s)"
-    cursor = db_conn.cursor()
-    try:
-        cursor.execute(insert_sql, (emp_id, first_name, last_name, primary_skill, location))
-        db_conn.commit()
-        emp_name = f"{first_name} {last_name}"
-    finally:
-        cursor.close()
+# ----------------
+# ROUTE 2b: Add Employee (POST -> Process the form and show output)
+# ----------------
+@app.route("/addemp", methods=["POST"])
+def addemp_submit():
+    # Collect form data
+    emp_id = request.form.get("emp_id")
+    fname = request.form.get("first_name")
+    lname = request.form.get("last_name")
+    skill = request.form.get("primary_skill")
+    loc = request.form.get("location")
 
-    print("Employee addition completed...")
-    return render_template('addempoutput.html',
-                           name=emp_name,
-                           color=color_codes[COLOR],
-                           project_name=PROJECT_NAME,
-                           project_slogan=PROJECT_SLOGAN)
+    # Optionally, insert into DB here if needed
+    # e.g. cursor.execute("INSERT INTO employees ...", (emp_id, fname, lname, skill, loc))
+    # connection.commit()
 
-@app.route("/getemp", methods=['GET', 'POST'])
-def get_emp():
-    return render_template("getemp.html",
-                           color=color_codes[COLOR],
-                           project_name=PROJECT_NAME,
-                           project_slogan=PROJECT_SLOGAN)
+    # Display the addempoutput.html page
+    return render_template("addempoutput.html",
+                           project_name=MY_NAME,
+                           project_slogan=PROJECT_NAME,
+                           name=f"{fname} {lname}",
+                           color="#EDEDED")
 
-@app.route("/fetchdata", methods=['GET','POST'])
-def fetch_data():
-    emp_id = request.form['emp_id']
-    output = {}
-    select_sql = "SELECT emp_id, first_name, last_name, primary_skill, location FROM employee WHERE emp_id=%s"
-    cursor = db_conn.cursor()
-    try:
-        cursor.execute(select_sql, (emp_id,))
-        result = cursor.fetchone()
-        if result:
-            output = {
-                "emp_id": result[0],
-                "first_name": result[1],
-                "last_name": result[2],
-                "primary_skills": result[3],
-                "location": result[4]
-            }
-    except Exception as e:
-        print(e)
-    finally:
-        cursor.close()
+# ----------------
+# ROUTE 3: Get Employee (GET -> Show the form)
+# ----------------
+@app.route("/getemp", methods=["GET"])
+def getemp_form():
+    return render_template("getemp.html", color="#EDEDED")
+
+# ----------------
+# ROUTE 3b: Fetch Employee Data (POST -> Query DB, show output)
+# ----------------
+@app.route("/fetchdata", methods=["POST"])
+def fetchdata():
+    emp_id = request.form.get("emp_id")
+
+    # Here you would query the DB for this employee ID
+    # Example: 
+    # cursor.execute("SELECT first_name, last_name, primary_skill, location FROM employees WHERE emp_id = %s", (emp_id,))
+    # row = cursor.fetchone()  # (fname, lname, skill, location)
+    # For now, let's simulate:
+    fname = "John"
+    lname = "Doe"
+    skill = "Python"
+    loc = "USA"
 
     return render_template("getempoutput.html",
-                           id=output.get("emp_id", "N/A"),
-                           fname=output.get("first_name", "N/A"),
-                           lname=output.get("last_name", "N/A"),
-                           interest=output.get("primary_skills", "N/A"),
-                           location=output.get("location", "N/A"),
-                           color=color_codes[COLOR],
-                           project_name=PROJECT_NAME,
-                           project_slogan=PROJECT_SLOGAN)
+                           color="#EDEDED",
+                           id=emp_id,
+                           fname=fname,
+                           lname=lname,
+                           interest=skill,
+                           location=loc)
 
-# ---------------------------
-# Main – Parse Command Line Args for Color Override and Run on Port 81
-# ---------------------------
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--color', required=False)
-    args = parser.parse_args()
-
-    if args.color:
-        print("Color from command line argument: " + args.color)
-        COLOR = args.color
-        if os.getenv('APP_COLOR'):
-            print("A color was set through the environment variable APP_COLOR, but command-line takes precedence.")
-    elif os.getenv('APP_COLOR'):
-        COLOR = os.getenv('APP_COLOR')
-        print("Color from environment variable: " + COLOR)
-    else:
-        print("No command line argument or environment variable provided. Using random color: " + COLOR)
-    
-    if COLOR not in color_codes:
-        print("Color not supported. Received '" + COLOR + "'. Supported colors are " + SUPPORTED_COLORS)
-        exit(1)
-    
-    # Run Flask app on port 81 so Kubernetes/Docker can route correctly
-    app.run(host='0.0.0.0', port=8081, debug=True)
+if __name__ == "__main__":
+    # Download the background image at startup
+    download_background_image()
+    # Listen on port 81 as required
+    app.run(host="0.0.0.0", port=81, debug=True)
