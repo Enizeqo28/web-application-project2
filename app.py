@@ -6,8 +6,8 @@ app = Flask(__name__)
 
 # Configuration from environment
 S3_IMAGE_URL  = os.environ.get('BG_IMAGE_URL')
-MY_NAME       = os.environ.get('MY_NAME') or "Eni Zeqo"
-PROJECT_NAME  = os.environ.get('PROJECT_NAME') or "My Project"
+GROUP_NAME    = os.environ.get('GROUP_NAME') or "Eni Zeqo 131511222"
+GROUP_SLOGAN  = os.environ.get('GROUP_SLOGAN') or "Together we cloud, Project CLO835!"
 DB_USER       = os.environ.get('DB_USER')
 DB_PASSWORD   = os.environ.get('DB_PASSWORD')
 DB_HOST       = os.environ.get('DB_HOST', 'localhost')
@@ -21,15 +21,26 @@ else:
     print("No BG_IMAGE_URL provided; using default background.")
 
 def download_background_image():
-    """Download the background image from S3 to local storage (if URL is provided)."""
     if not S3_IMAGE_URL:
         return  # No URL, nothing to do
     try:
+        # S3_IMAGE_URL expected format: "s3://bucket-name/key/to/background2.png"
         url = S3_IMAGE_URL
         bucket_name = url.replace("s3://", "").split("/")[0]
         object_key = "/".join(url.replace("s3://", "").split("/")[1:])
+        # Determine the filename from the S3 URL—should now be "background2.png"
+        filename = os.path.basename(object_key)
+        local_path = os.path.join("static", filename)
         
-        local_path = "static/background.png"
+        # (Optional) Remove any existing file with this name to force a fresh download.
+        if os.path.exists(local_path):
+            os.remove(local_path)
+        
+        # For extra caution, you might also remove the old file if you know its name.
+        old_file = os.path.join("static", "background.png")
+        if os.path.exists(old_file):
+            os.remove(old_file)
+        
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         
         s3 = boto3.resource('s3')
@@ -43,11 +54,13 @@ def download_background_image():
 # ----------------
 @app.route("/")
 def home():
-    # Display the 'about.html' template
+    bg_image = os.path.basename(S3_IMAGE_URL) if S3_IMAGE_URL else "default.png"
     return render_template("about.html",
-                           project_name=MY_NAME,
-                           project_slogan=PROJECT_NAME,
-                           name=MY_NAME)
+                           project_name=GROUP_NAME,
+                           project_slogan=GROUP_SLOGAN,
+                           name=GROUP_NAME,
+                           bg_image=bg_image,
+                           timestamp=int(time.time()))
 
 # ----------------
 # ROUTE 2: Add Employee (GET -> Show the form)
@@ -71,13 +84,11 @@ def addemp_submit():
     loc = request.form.get("location")
 
     # Optionally, insert into DB here if needed
-    # e.g. cursor.execute("INSERT INTO employees ...", (emp_id, fname, lname, skill, loc))
-    # connection.commit()
 
-    # Display the addempoutput.html page
+    # Display the addempoutput.html page using the correct variables
     return render_template("addempoutput.html",
-                           project_name=MY_NAME,
-                           project_slogan=PROJECT_NAME,
+                           project_name=GROUP_NAME,
+                           project_slogan=GROUP_SLOGAN,
                            name=f"{fname} {lname}",
                            color="#EDEDED")
 
@@ -96,9 +107,6 @@ def fetchdata():
     emp_id = request.form.get("emp_id")
 
     # Here you would query the DB for this employee ID
-    # Example: 
-    # cursor.execute("SELECT first_name, last_name, primary_skill, location FROM employees WHERE emp_id = %s", (emp_id,))
-    # row = cursor.fetchone()  # (fname, lname, skill, location)
     # For now, let's simulate:
     fname = "John"
     lname = "Doe"
@@ -112,7 +120,6 @@ def fetchdata():
                            lname=lname,
                            interest=skill,
                            location=loc)
-                           
 
 # Download the background image at startup (before app.run)
 download_background_image()
