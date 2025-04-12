@@ -4,7 +4,8 @@
     <title>Welcome - {{ project_name }}</title>
     <style>
         body {
-            background-image: url("{{ url_for('static', filename='background.png') }}");
+            
+            background-image: url("{{ url_for('static', filename=bg_image) }}?t={{ timestamp }}");
             background-size: cover;
             color: #e4e4e4;
             text-align: center;
