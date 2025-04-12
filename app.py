@@ -22,21 +22,19 @@ else:
 
 def download_background_image():
     if not S3_IMAGE_URL:
-        return  # No URL, nothing to do
+        return  # No URL provided
     try:
-        # S3_IMAGE_URL expected format: "s3://bucket-name/key/to/background2.png"
+        # S3_IMAGE_URL is expected to be in the format: "s3://bucket-name/key/to/background2.png"
         url = S3_IMAGE_URL
         bucket_name = url.replace("s3://", "").split("/")[0]
         object_key = "/".join(url.replace("s3://", "").split("/")[1:])
-        # Determine the filename from the S3 URL—should now be "background2.png"
+        # Extract the filename (should be "background2.png")
         filename = os.path.basename(object_key)
         local_path = os.path.join("static", filename)
         
-        # (Optional) Remove any existing file with this name to force a fresh download.
+        # Remove any existing file with the same name (or the old file) to force a fresh download
         if os.path.exists(local_path):
             os.remove(local_path)
-        
-        # For extra caution, you might also remove the old file if you know its name.
         old_file = os.path.join("static", "background.png")
         if os.path.exists(old_file):
             os.remove(old_file)
@@ -48,6 +46,7 @@ def download_background_image():
         print(f"Downloaded background image from S3: s3://{bucket_name}/{object_key} -> {local_path}")
     except Exception as e:
         print(f"ERROR downloading S3 image: {e}")
+
 
 # ----------------
 # ROUTE 1: Home (about.html)
