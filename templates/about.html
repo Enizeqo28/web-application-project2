@@ -1,18 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>About - {{ project_name }}</title>
+    <title>Welcome - {{ project_name }}</title>
     <style>
         body {
-            /* Use double quotes inside url to avoid conflict */
             background-image: url("{{ url_for('static', filename='background.png') }}");
             background-size: cover;
             color: #e4e4e4;
             text-align: center;
             font-family: avenir;
+            margin-top: 50px;
         }
-        header {
-            margin-top: 20px;
+        h1 {
+            font-size: 3em;
+        }
+        a {
+            display: block;
+            margin: 20px;
+            font-size: 1.5em;
+            color: white;
+            text-decoration: none;
+            background: #444;
+            padding: 10px 20px;
+            border-radius: 10px;
+            width: 250px;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -22,9 +35,9 @@
         <p><em>{{ project_slogan }}</em></p>
     </header>
     <div>
-        <!-- Consolidated employee success message -->
-        <h2>Employee {{ name }} was successfully added to the database</h2>
-        <a href="{{ url_for('home') }}">Back</a>
+        <a href="/addemp">➕ Add Employee</a>
+        <a href="/getemp">🔍 Get Employee Info</a>
+        <a href="/about">ℹ️ About</a>
     </div>
 </body>
 </html>
