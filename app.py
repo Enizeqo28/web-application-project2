@@ -1,11 +1,13 @@
 import os
+import re
 import boto3
-from flask import Flask, request, render_template
+from flask import Flask, render_template, request, send_file
+from io import BytesIO
 
 app = Flask(__name__)
 
 # Configuration from environment
-S3_IMAGE_URL  = os.environ.get('BG_IMAGE_URL')
+S3_IMAGE_URL  = os.environ.get('BG_IMAGE_URL')  # Expecting format: s3://eni-bucket-background/background2.png
 MY_NAME       = os.environ.get('MY_NAME') or "Eni Zeqo"
 PROJECT_NAME  = os.environ.get('PROJECT_NAME') or "My Project"
 DB_USER       = os.environ.get('DB_USER')
@@ -19,58 +21,68 @@ if S3_IMAGE_URL:
 else:
     print("No BG_IMAGE_URL provided; using default background.")
 
-def get_presigned_url():
-    """
-    Generate a presigned URL for the S3 object if S3_IMAGE_URL is in s3:// format.
-    Returns the presigned URL (valid for 1 hour) if successful; else returns S3_IMAGE_URL unchanged.
-    """
-    if not S3_IMAGE_URL or not S3_IMAGE_URL.startswith("s3://"):
-        # Either no URL provided or already in a normal URL format.
-        return S3_IMAGE_URL
-    try:
-        # Parse the bucket name and object key from the s3:// URL
-        parts = S3_IMAGE_URL.replace("s3://", "").split("/", 1)
-        bucket_name = parts[0]
-        object_key = parts[1] if len(parts) > 1 else ""
-        
-        # Explicitly set the region if needed
-        s3_client = boto3.client('s3', region_name="us-east-1")
-        
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket_name, 'Key': object_key},
-            ExpiresIn=3600  # URL valid for 1 hour
-        )
-        print(f"Generated presigned URL: {presigned_url}")
-        return presigned_url
-    except Exception as e:
-        print(f"ERROR generating presigned URL: {e}")
-        return S3_IMAGE_URL
+# Parse the bucket name from S3_IMAGE_URL
+S3_BUCKET = ""
+if S3_IMAGE_URL:
+    match = re.match(r"s3://([^/]+)/(.+)", S3_IMAGE_URL)
+    if match:
+        S3_BUCKET = match.group(1)
 
-# ----------------
-# ROUTE 1: Home (about.html)
-# ----------------
+def get_background_image():
+    """
+    Download the background image from S3 into a local static folder and return the object key.
+    This function mimics your friend's approach.
+    """
+    if S3_IMAGE_URL:
+        match = re.match(r"s3://([^/]+)/(.+)", S3_IMAGE_URL)
+        if match:
+            bucket = match.group(1)
+            key = match.group(2)
+            local_path = "static/background.png"
+            os.makedirs("static", exist_ok=True)
+            try:
+                s3_client = boto3.client('s3', region_name="us-east-1")
+                s3_client.download_file(bucket, key, local_path)
+                print(f"[+] Downloaded {key} from {bucket} to {local_path}")
+            except Exception as e:
+                print(f"[!] Error downloading from S3: {e}")
+            return key
+        else:
+            print("[!] Invalid S3_IMAGE_URL format.")
+            return ""
+    else:
+        print("No BG_IMAGE_URL provided.")
+        return ""
+
+@app.route('/proxy-image/<path:key>')
+def proxy_image(key):
+    """
+    Proxy endpoint to fetch the image from S3 and serve it to the browser.
+    """
+    s3_client = boto3.client('s3', region_name="us-east-1")
+    file_obj = BytesIO()
+    try:
+        s3_client.download_fileobj(S3_BUCKET, key, file_obj)
+        file_obj.seek(0)
+        # Adjust mimetype if needed, here assumed as image/png
+        return send_file(file_obj, mimetype='image/png')
+    except Exception as e:
+        return f"Error: {e}", 500
+
 @app.route("/")
 def home():
-    # Generate a presigned URL for the background image
-    bg_url = get_presigned_url()
-    # Render the 'about.html' template, passing the generated URL
+    background_key = get_background_image()
     return render_template("about.html",
                            project_name=MY_NAME,
                            project_slogan=PROJECT_NAME,
                            name=MY_NAME,
-                           bg_image_url=bg_url)
+                           BACKGROUND_IMAGE=background_key)
 
-# ----------------
-# ROUTE 2: Add Employee (GET -> Show the form)
-# ----------------
 @app.route("/addemp", methods=["GET"])
 def addemp_form():
-    return render_template("addemp.html", color="#EDEDED")
+    background_key = get_background_image()
+    return render_template("addemp.html", color="#EDEDED", BACKGROUND_IMAGE=background_key)
 
-# ----------------
-# ROUTE 2b: Add Employee (POST -> Process the form and show output)
-# ----------------
 @app.route("/addemp", methods=["POST"])
 def addemp_submit():
     emp_id = request.form.get("emp_id")
@@ -78,37 +90,35 @@ def addemp_submit():
     lname = request.form.get("last_name")
     skill = request.form.get("primary_skill")
     loc = request.form.get("location")
+    background_key = get_background_image()
     return render_template("addempoutput.html",
                            project_name=MY_NAME,
                            project_slogan=PROJECT_NAME,
                            name=f"{fname} {lname}",
-                           color="#EDEDED")
+                           color="#EDEDED",
+                           BACKGROUND_IMAGE=background_key)
 
-# ----------------
-# ROUTE 3: Get Employee (GET -> Show the form)
-# ----------------
 @app.route("/getemp", methods=["GET"])
 def getemp_form():
-    return render_template("getemp.html", color="#EDEDED")
+    background_key = get_background_image()
+    return render_template("getemp.html", color="#EDEDED", BACKGROUND_IMAGE=background_key)
 
-# ----------------
-# ROUTE 3b: Fetch Employee Data (POST -> Query DB, show output)
-# ----------------
 @app.route("/fetchdata", methods=["POST"])
 def fetchdata():
     emp_id = request.form.get("emp_id")
-    # Simulate a query result
     fname = "Eni"
     lname = "Zeqo"
     skill = "Python"
     loc = "Toronto"
+    background_key = get_background_image()
     return render_template("getempoutput.html",
                            color="#EDEDED",
                            id=emp_id,
                            fname=fname,
                            lname=lname,
                            interest=skill,
-                           location=loc)
+                           location=loc,
+                           BACKGROUND_IMAGE=background_key)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=81, debug=True)
