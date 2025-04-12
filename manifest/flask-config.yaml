@@ -4,7 +4,7 @@ metadata:
   name: flask-config
   namespace: final
 data:
-  BG_IMAGE_URL: "s3://eni-clo835-finalproject/background.png"
+  BG_IMAGE_URL: "s3://eni-bucket-background/background2.png"
   GROUP_NAME: "Team Eni"
   GROUP_SLOGAN: "Together we cloud!"
   DB_HOST: "mysql-service"
