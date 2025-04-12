@@ -1,25 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Add Emp Output - {{ project_name }}</title>
+    <title>Employee Added - {{ project_name }}</title>
     <style>
         body {
-            background-image: url('{{ url_for('static', filename='background.png') }}');
+            background-image: url("{{ url_for('static', filename='background.png') }}");
             background-size: cover;
-            color: #e4e4e4;
+            color: #fff;
             text-align: center;
             font-family: avenir;
+            margin-top: 50px;
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 40px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        h1, p {
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #00ace6;
+            font-size: 18px;
+            text-decoration: none;
+            background-color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        a:hover {
+            background-color: #00ace6;
+            color: #fff;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>{{ project_name }}</h1>
-        <p><em>{{ project_slogan }}</em></p>
-    </header>
-    <div>
-        <h1>The employee {{ name }} was successfully added to the database</h1>
-        <a href="{{ url_for('home') }}">Back</a>
+
+    <div class="container">
+        <header>
+            <h1>{{ project_name }}</h1>
+            <p><em>{{ project_slogan }}</em></p>
+        </header>
+
+        <h1>✅ Employee <strong>{{ name }}</strong> was successfully added to the database!</h1>
+        <a href="{{ url_for('home') }}">Back to Home</a>
     </div>
+
 </body>
 </html>
+
