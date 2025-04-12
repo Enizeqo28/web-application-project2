@@ -4,11 +4,8 @@
     <title>Welcome - {{ project_name }}</title>
     <style>
         body {
-            /* Use the proxy endpoint to serve the image from S3 */
-            background-image: url("{{ url_for('proxy_image', key=BACKGROUND_IMAGE) }}");
+            background-image: url("{{ url_for('static', filename='background.png') }}");
             background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
             color: #e4e4e4;
             text-align: center;
             font-family: avenir;
