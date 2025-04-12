@@ -1,5 +1,6 @@
 import os
 import boto3
+import time
 from flask import Flask, request, render_template
 
 app = Flask(__name__)
@@ -54,12 +55,13 @@ def download_background_image():
 @app.route("/")
 def home():
     bg_image = os.path.basename(S3_IMAGE_URL) if S3_IMAGE_URL else "default.png"
+    timestamp = int(time.time())  # Add this line to generate the timestamp
     return render_template("about.html",
                            project_name=GROUP_NAME,
                            project_slogan=GROUP_SLOGAN,
                            name=GROUP_NAME,
                            bg_image=bg_image,
-                           timestamp=int(time.time()))
+                           timestamp=timestamp)  # Pass timestamp to the template
 
 # ----------------
 # ROUTE 2: Add Employee (GET -> Show the form)
