@@ -1,6 +1,6 @@
-# Hello, my name is Eni and this is my project! 
+# Hello, this is my final project! 
 
-# Install the required MySQL package
+# Install the required MySQL package 
 ```
 sudo apt-get update -y
 sudo apt-get install mysql-client -y
@@ -55,3 +55,5 @@ export APP_COLOR=blue
 ```
 docker run -p 8080:8080 -e APP_COLOR=$APP_COLOR -e DBHOST=$DBHOST -e DBPORT=$DBPORT -e DBUSER=$DBUSER -e DBPWD=$DBPWD  my_app
 ```
+
+
