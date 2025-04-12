@@ -16,46 +16,53 @@ DB_NAME       = os.environ.get('DB_NAME', 'mydatabase')
 # Log the background image URL for debugging
 if S3_IMAGE_URL:
     print(f"Background image URL from config: {S3_IMAGE_URL}")
-    
 else:
     print("No BG_IMAGE_URL provided; using default background.")
 
-def download_background_image():
-    """Download the background image from S3 to local storage (if URL is provided)."""
-    if not S3_IMAGE_URL:
-        return  # No URL, nothing to do
+def get_presigned_url():
+    """
+    Generate a presigned URL for the S3 object if BG_IMAGE_URL is in s3:// format.
+    Returns the presigned URL (valid for 1 hour) if successful, else returns S3_IMAGE_URL unchanged.
+    """
+    if not S3_IMAGE_URL or not S3_IMAGE_URL.startswith("s3://"):
+        # Either no URL provided or it is already a normal URL.
+        return S3_IMAGE_URL
     try:
-        url = S3_IMAGE_URL
-        bucket_name = url.replace("s3://", "").split("/")[0]
-        object_key = "/".join(url.replace("s3://", "").split("/")[1:])
-        
-        local_path = "static/background.png"
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-        
-        s3 = boto3.resource('s3')
-        s3.Bucket(bucket_name).download_file(object_key, local_path)
-        print(f"Downloaded background image from S3: s3://{bucket_name}/{object_key} -> {local_path}")
+        # Parse the bucket name and object key from the S3 URL
+        parts = S3_IMAGE_URL.replace("s3://", "").split("/", 1)
+        bucket_name = parts[0]
+        object_key = parts[1] if len(parts) > 1 else ""
+        s3_client = boto3.client('s3')
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket_name, 'Key': object_key},
+            ExpiresIn=3600  # URL valid for 1 hour
+        )
+        print(f"Generated presigned URL: {presigned_url}")
+        return presigned_url
     except Exception as e:
-        print(f"ERROR downloading S3 image: {e}")
+        print(f"ERROR generating presigned URL: {e}")
+        return S3_IMAGE_URL
 
 # ----------------
 # ROUTE 1: Home (about.html)
 # ----------------
 @app.route("/")
 def home():
-    # Display the 'about.html' template
+    # Generate a presigned URL for the background image
+    bg_url = get_presigned_url()
+    # Display the 'about.html' template, passing the presigned URL along with other variables.
     return render_template("about.html",
                            project_name=MY_NAME,
                            project_slogan=PROJECT_NAME,
-                           name=MY_NAME)
+                           name=MY_NAME,
+                           bg_image_url=bg_url)
 
 # ----------------
 # ROUTE 2: Add Employee (GET -> Show the form)
 # ----------------
 @app.route("/addemp", methods=["GET"])
 def addemp_form():
-    # 'addemp.html' uses a <form> to POST data to /addemp
-    # Pass a background color or any variable the template needs
     return render_template("addemp.html", color="#EDEDED")
 
 # ----------------
@@ -63,18 +70,11 @@ def addemp_form():
 # ----------------
 @app.route("/addemp", methods=["POST"])
 def addemp_submit():
-    # Collect form data
     emp_id = request.form.get("emp_id")
     fname = request.form.get("first_name")
     lname = request.form.get("last_name")
     skill = request.form.get("primary_skill")
     loc = request.form.get("location")
-
-    # Optionally, insert into DB here if needed
-    # e.g. cursor.execute("INSERT INTO employees ...", (emp_id, fname, lname, skill, loc))
-    # connection.commit()
-
-    # Display the addempoutput.html page
     return render_template("addempoutput.html",
                            project_name=MY_NAME,
                            project_slogan=PROJECT_NAME,
@@ -94,17 +94,11 @@ def getemp_form():
 @app.route("/fetchdata", methods=["POST"])
 def fetchdata():
     emp_id = request.form.get("emp_id")
-
-    # Here you would query the DB for this employee ID
-    # Example: 
-    # cursor.execute("SELECT first_name, last_name, primary_skill, location FROM employees WHERE emp_id = %s", (emp_id,))
-    # row = cursor.fetchone()  # (fname, lname, skill, location)
-    # For now, let's simulate:
-    fname = "John"
-    lname = "Doe"
+    # Simulate a query result
+    fname = "Eni"
+    lname = "Zeqo"
     skill = "Python"
-    loc = "USA"
-
+    loc = "Toronto"
     return render_template("getempoutput.html",
                            color="#EDEDED",
                            id=emp_id,
@@ -112,10 +106,6 @@ def fetchdata():
                            lname=lname,
                            interest=skill,
                            location=loc)
-                           
-
-# Download the background image at startup (before app.run)
-download_background_image()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=81, debug=True)
