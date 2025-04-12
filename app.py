@@ -21,18 +21,21 @@ else:
 
 def get_presigned_url():
     """
-    Generate a presigned URL for the S3 object if BG_IMAGE_URL is in s3:// format.
-    Returns the presigned URL (valid for 1 hour) if successful, else returns S3_IMAGE_URL unchanged.
+    Generate a presigned URL for the S3 object if S3_IMAGE_URL is in s3:// format.
+    Returns the presigned URL (valid for 1 hour) if successful; else returns S3_IMAGE_URL unchanged.
     """
     if not S3_IMAGE_URL or not S3_IMAGE_URL.startswith("s3://"):
-        # Either no URL provided or it is already a normal URL.
+        # Either no URL provided or already in a normal URL format.
         return S3_IMAGE_URL
     try:
-        # Parse the bucket name and object key from the S3 URL
+        # Parse the bucket name and object key from the s3:// URL
         parts = S3_IMAGE_URL.replace("s3://", "").split("/", 1)
         bucket_name = parts[0]
         object_key = parts[1] if len(parts) > 1 else ""
-        s3_client = boto3.client('s3')
+        
+        # Explicitly set the region if needed
+        s3_client = boto3.client('s3', region_name="us-east-1")
+        
         presigned_url = s3_client.generate_presigned_url(
             'get_object',
             Params={'Bucket': bucket_name, 'Key': object_key},
@@ -51,7 +54,7 @@ def get_presigned_url():
 def home():
     # Generate a presigned URL for the background image
     bg_url = get_presigned_url()
-    # Display the 'about.html' template, passing the presigned URL along with other variables.
+    # Render the 'about.html' template, passing the generated URL
     return render_template("about.html",
                            project_name=MY_NAME,
                            project_slogan=PROJECT_NAME,
