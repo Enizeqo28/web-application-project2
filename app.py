@@ -16,6 +16,7 @@ DB_NAME       = os.environ.get('DB_NAME', 'mydatabase')
 # Log the background image URL for debugging
 if S3_IMAGE_URL:
     print(f"Background image URL from config: {S3_IMAGE_URL}")
+    
 else:
     print("No BG_IMAGE_URL provided; using default background.")
 
@@ -111,9 +112,10 @@ def fetchdata():
                            lname=lname,
                            interest=skill,
                            location=loc)
+                           
+
+# Download the background image at startup (before app.run)
+download_background_image()
 
 if __name__ == "__main__":
-    # Download the background image at startup
-    download_background_image()
-    # Listen on port 81 as required
     app.run(host="0.0.0.0", port=81, debug=True)
