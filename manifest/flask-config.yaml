@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flask-config
+  namespace: final
+data:
+  BG_IMAGE_URL: "s3://eni-clo835-finalproject/background.png"
+  GROUP_NAME: "Team Eni"
+  GROUP_SLOGAN: "Together we cloud!"
+  DB_HOST: "mysql-service"
+  DB_NAME: "sampledb"
