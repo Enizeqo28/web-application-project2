@@ -1,27 +1,55 @@
-	<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-	<title>Get Employee Information</title>
+    <title>Get Employee Information</title>
+    <style>
+        body {
+            background-image: url("{{ url_for('static', filename='background.png') }}");
+            background-size: cover;
+            color: #fff;
+            text-align: center;
+            font-family: avenir;
+            margin-top: 50px;
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 40px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        input, button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 10px 0;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            background-color: #00ace6;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0099cc;
+        }
+    </style>
 </head>
-<center>
-	<font color="black" size="5" style="font-family: avenir">
+<body>
 
-		<h1 style="color: DodgerBlue">Employee Information</h1>
+    <div class="container">
+        <h1>🔍 Employee Information</h1>
+        <form action="/fetchdata" method="POST">
+            <h2>Enter Employee ID</h2>
+            <input type="number" name="emp_id" placeholder="Employee ID" required><br>
+            <button type="submit">FETCH INFO</button>
+        </form>
+    </div>
 
-		<body style="background: {{ color }};">
-
-			<form action="/fetchdata" autocomplete="on" method="POST">
-
-				<h2 style="color: grey">Enter Employee ID</h2>
-
-		  		Employee ID:<br> <input style="height:25px;font-size:14pt;" type="number" name="emp_id" autofocus size="40"><br><br>
-
-
-		  		<button type="submit" style="background: grey; height: 45px; width: 200px; color: white; size: 5; font:oblique;">FETCH INFO</button><br><br>
-
-			</form>
-
-		</body>
-	</font>
-</center>
+</body>
 </html>
